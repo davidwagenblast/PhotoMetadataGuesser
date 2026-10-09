@@ -21,9 +21,9 @@ final class LayoutTests: XCTestCase {
         return host.sizeThatFits(in: CGSize(width: maxWidth, height: 3000)).width
     }
 
-    func assertFits<V: View>(_ name: String, _ view: V, state: AppState = AppState(),
+    func assertFits<V: View>(_ name: String, _ view: V, state: AppState? = nil,
                              file: StaticString = #filePath, line: UInt = #line) {
-        let width = requiredWidth(view, state: state)
+        let width = requiredWidth(view, state: state ?? AppState())
         XCTAssertLessThanOrEqual(width, maxWidth + 0.5, "\(name) needs \(Int(width)) pt but only \(Int(maxWidth)) pt is guaranteed",
                                  file: file, line: line)
     }
