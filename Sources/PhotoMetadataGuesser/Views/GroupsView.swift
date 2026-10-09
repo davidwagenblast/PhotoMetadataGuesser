@@ -30,7 +30,7 @@ struct GroupsView: View {
     var body: some View {
         HStack(spacing: 0) {
             groupList
-                .frame(width: 250)
+                .frame(width: 220)
             Divider()
             VStack(alignment: .leading, spacing: 0) {
                 VStack(alignment: .leading, spacing: 14) {
@@ -134,22 +134,75 @@ struct GroupsView: View {
         }
     }
 
+    private var filterPicker: some View {
+        Picker("Show", selection: _filter.projectedValue) {
+            ForEach(PhotoFilter.allCases) { Text($0.rawValue).tag($0) }
+        }
+        .fixedSize()
+    }
+
+    private var searchField: some View {
+        TextField("Search filenames or albums", text: _search.projectedValue)
+            .textFieldStyle(.roundedBorder)
+            .frame(minWidth: 120, maxWidth: 240)
+    }
+
+    private func selectMenu(_ photos: [UndatedPhoto]) -> some View {
+        Menu("\(photos.count.formatted()) photos") {
+            Button("Select All Shown") { selectedPhotos.formUnion(photos.map(\.id)) }
+            Button("Clear Selection") { selectedPhotos.removeAll() }
+                .disabled(selectedPhotos.isEmpty)
+        }
+        .fixedSize()
+    }
+
+    private var selectionCount: some View {
+        Text("\(selectedPhotos.count) selected").fontWeight(.medium)
+    }
+
+    @ViewBuilder private func selectionActions(_ selectedGroup: PhotoGroup?) -> some View {
+        if let g = selectedGroup {
+            Button("Remove from Group") {
+                state.remove(Array(selectedPhotos), from: g.id)
+                selectedPhotos.removeAll()
+            }
+            Button("Add to This Group") {
+                state.add(orderedSelection, to: g.id)
+                selectedPhotos.removeAll()
+            }
+        }
+        Button {
+            newGroupName = ""
+            showingNewGroup = true
+        } label: {
+            Label("New Group", systemImage: "plus.rectangle.on.rectangle")
+        }
+        .buttonStyle(.borderedProminent)
+    }
+
     private var photoGrid: some View {
         let photos = visiblePhotos
         let selectedGroup = state.groups.first { $0.id == selectedGroupID }
         return VStack(spacing: 0) {
-            HStack(spacing: 10) {
-                Picker("Show", selection: _filter.projectedValue) {
-                    ForEach(PhotoFilter.allCases) { Text($0.rawValue).tag($0) }
+            // One row when there's room, two when the window is narrow.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 10) {
+                    filterPicker
+                    searchField
+                    Spacer(minLength: 8)
+                    selectMenu(photos)
                 }
-                .fixedSize()
-                TextField("Search filenames or albums", text: _search.projectedValue)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(minWidth: 120, maxWidth: 240)
-                Spacer(minLength: 8)
-                Text("\(photos.count.formatted()) photos").foregroundStyle(.secondary)
-                Button("Select All") { selectedPhotos.formUnion(photos.map(\.id)) }
-                Button("Clear") { selectedPhotos.removeAll() }.disabled(selectedPhotos.isEmpty)
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 10) {
+                        filterPicker
+                        Spacer(minLength: 0)
+                    }
+                    HStack(spacing: 10) {
+                        searchField
+                        Spacer(minLength: 8)
+                        selectMenu(photos)
+                    }
+                }
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 10)
@@ -177,26 +230,19 @@ struct GroupsView: View {
             }
             .safeAreaInset(edge: .bottom) {
                 if !selectedPhotos.isEmpty {
-                    HStack(spacing: 12) {
-                        Text("\(selectedPhotos.count) selected").fontWeight(.medium)
-                        Spacer()
-                        if let g = selectedGroup {
-                            Button("Remove from Group") {
-                                state.remove(Array(selectedPhotos), from: g.id)
-                                selectedPhotos.removeAll()
-                            }
-                            Button("Add to This Group") {
-                                state.add(orderedSelection, to: g.id)
-                                selectedPhotos.removeAll()
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: 12) {
+                            selectionCount
+                            Spacer(minLength: 8)
+                            selectionActions(selectedGroup)
+                        }
+                        VStack(alignment: .leading, spacing: 8) {
+                            selectionCount
+                            HStack(spacing: 10) {
+                                Spacer(minLength: 0)
+                                selectionActions(selectedGroup)
                             }
                         }
-                        Button {
-                            newGroupName = ""
-                            showingNewGroup = true
-                        } label: {
-                            Label("New Group", systemImage: "plus.rectangle.on.rectangle")
-                        }
-                        .buttonStyle(.borderedProminent)
                     }
                     .padding(12)
                     .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
@@ -283,22 +329,22 @@ struct GroupEditor: View {
                           text: group.hint, axis: .vertical)
                     .textFieldStyle(.roundedBorder)
                     .lineLimit(1...3)
-                HStack(spacing: 14) {
+                HStack(spacing: 10) {
                     Text("Years (if known):")
                     TextField("From", value: group.yearFrom, format: .number.grouping(.never))
-                        .frame(width: 70)
+                        .frame(width: 64)
                     Text("to")
                     TextField("To", value: group.yearTo, format: .number.grouping(.never))
-                        .frame(width: 70)
-                    Picker("Season", selection: group.season) {
-                        Text("Unknown").tag(Season?.none)
-                        ForEach(Season.allCases) { s in
-                            Label(s.displayName, systemImage: s.symbolName).tag(Season?.some(s))
-                        }
-                    }
-                    .frame(width: 180)
+                        .frame(width: 64)
                 }
                 .textFieldStyle(.roundedBorder)
+                Picker("Season (if known)", selection: group.season) {
+                    Text("Unknown").tag(Season?.none)
+                    ForEach(Season.allCases) { s in
+                        Label(s.displayName, systemImage: s.symbolName).tag(Season?.some(s))
+                    }
+                }
+                .fixedSize()
                 peopleRow(group)
             }
         }

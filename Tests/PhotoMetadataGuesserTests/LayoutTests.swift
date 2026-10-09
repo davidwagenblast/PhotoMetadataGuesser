@@ -43,6 +43,12 @@ final class LayoutTests: XCTestCase {
                                hint: "Probably the summer of 1978, everyone is there")
         state.groups = [group]
         assertFits("Groups", GroupsView(goNext: {}, _selectedGroupID: State(initialValue: group.id)), state: state)
+        // With photos selected, the action bar appears at the bottom too.
+        assertFits("Groups with selection",
+                   GroupsView(goNext: {}, _selectedGroupID: State(initialValue: group.id),
+                              _selectedPhotos: State(initialValue: ["a", "b"])),
+                   state: state)
+        assertFits("Groups without a group open", GroupsView(goNext: {}), state: state)
     }
 
     func testWindowLeavesRoomForSidebarAndSteps() {
