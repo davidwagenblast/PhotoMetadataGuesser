@@ -1,0 +1,37 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  swiftpm:
+    name: Test & build app (SwiftPM)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: swift --version
+      - name: Unit tests (estimation logic)
+        run: swift test
+      - name: Build app bundle
+        run: ./scripts/build-app.sh
+      - name: Zip app
+        run: cd build && ditto -c -k --keepParent "Photo Date Guesser.app" PhotoDateGuesser.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PhotoDateGuesser-app
+          path: build/PhotoDateGuesser.zip
+
+  xcode:
+    name: Build Xcode project (XcodeGen)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate project
+        run: xcodegen generate
+      - name: Build
+        run: xcodebuild -project PhotoMetadataGuesser.xcodeproj -scheme PhotoMetadataGuesser -configuration Debug -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO build

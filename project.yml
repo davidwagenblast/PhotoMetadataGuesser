@@ -1,0 +1,45 @@
+# Optional: generate an Xcode project with XcodeGen (brew install xcodegen; xcodegen generate).
+name: PhotoMetadataGuesser
+options:
+  bundleIdPrefix: io.github.davidwagenblast
+  deploymentTarget:
+    macOS: "14.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+targets:
+  DateGuessCore:
+    type: library.static
+    platform: macOS
+    sources: [Sources/DateGuessCore]
+    settings:
+      base:
+        PRODUCT_NAME: DateGuessCore
+  PhotoMetadataGuesser:
+    type: application
+    platform: macOS
+    sources:
+      - Sources/PhotoMetadataGuesser
+      - path: Resources/AppIcon.icns
+        buildPhase: resources
+    dependencies:
+      - target: DateGuessCore
+    settings:
+      base:
+        PRODUCT_NAME: PhotoMetadataGuesser
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.davidwagenblast.PhotoMetadataGuesser
+        INFOPLIST_FILE: Resources/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_ENTITLEMENTS: Resources/PhotoMetadataGuesser.entitlements
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual
+        ENABLE_HARDENED_RUNTIME: NO
+    scheme:
+      testTargets: []
+  DateGuessCoreTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources: [Tests/DateGuessCoreTests]
+    dependencies:
+      - target: DateGuessCore
