@@ -73,20 +73,24 @@ Each card shows the thumbnail, the guess (“Summer 1976”), a confidence badge
 
 ## Building
 
-Requirements: macOS 14 Sonoma or later and Xcode 15.3+ (or matching Command Line Tools).
+Requirements: macOS 14 Sonoma or later. You also need Apple’s free developer tools; the build script offers to install them if they’re missing.
 
-```bash
-git clone https://github.com/davidwagenblast/PhotoMetadataGuesser.git
-cd PhotoMetadataGuesser
-./scripts/build-app.sh
-open "build/Photo Date Guesser.app"
-```
+### One step
 
-The script builds with Swift Package Manager, assembles the `.app` bundle (Info.plist, icon, sandbox entitlements) and signs it ad-hoc. To sign with your Developer ID, set `SIGN_IDENTITY="Developer ID Application: …"`. You can drag the app into `/Applications`.
+1. Download the project: **Code ▸ Download ZIP** on GitHub, then double-click the ZIP. Or clone it with `git clone https://github.com/davidwagenblast/PhotoMetadataGuesser.git`.
+2. Double-click **`Build Photo Date Guesser.command`**.
 
-To work in Xcode, generate a project with [XcodeGen](https://github.com/yonaskolb/XcodeGen): `brew install xcodegen && xcodegen generate && open PhotoMetadataGuesser.xcodeproj`.
+That’s it. It builds the app, puts it in your Applications folder and opens it.
 
-Run the estimation-logic tests with `swift test`.
+If macOS says the file can’t be opened because it’s from the internet, right-click it and choose **Open**. If it says the file isn’t executable, open Terminal in the folder and run `bash "Build Photo Date Guesser.command"`.
+
+From Terminal you can also run `./"Build Photo Date Guesser.command" --no-install --no-open` to just build into `./build`.
+
+### Other ways
+
+- `./scripts/build-app.sh` builds and signs `build/Photo Date Guesser.app` without installing it. To sign with your Developer ID, set `SIGN_IDENTITY="Developer ID Application: …"`.
+- To work in Xcode, generate a project with [XcodeGen](https://github.com/yonaskolb/XcodeGen): `brew install xcodegen && xcodegen generate && open PhotoMetadataGuesser.xcodeproj`.
+- `swift test` runs the estimation-logic tests (needs full Xcode).
 
 Every push is built and tested on GitHub Actions (macOS). The built app is attached to each run as an artifact.
 

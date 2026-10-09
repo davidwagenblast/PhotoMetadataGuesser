@@ -15,8 +15,8 @@ jobs:
         run: swift --version
       - name: Unit tests (estimation logic)
         run: swift test
-      - name: Build app bundle
-        run: ./scripts/build-app.sh
+      - name: Build app bundle (one-step script)
+        run: ./"Build Photo Date Guesser.command"
       - name: Zip app
         run: cd build && ditto -c -k --keepParent "Photo Date Guesser.app" PhotoDateGuesser.zip
       - uses: actions/upload-artifact@v4
