@@ -5,13 +5,20 @@ struct GroupsView: View {
     @Environment(AppState.self) private var state
     var goNext: () -> Void
 
-    @State private var selectedGroupID: UUID?
-    @State private var selectedPhotos: Set<String> = []
-    @State private var filter: PhotoFilter = .ungrouped
-    @State private var search = ""
-    @State private var showingNewGroup = false
-    @State private var newGroupName = ""
-    @State private var suggestions: [GroupSuggestion] = []
+    var _selectedGroupID = State<UUID?>(initialValue: nil)
+    private var selectedGroupID: UUID? { get { _selectedGroupID.wrappedValue } nonmutating set { _selectedGroupID.wrappedValue = newValue } }
+    var _selectedPhotos = State<Set<String>>(initialValue: [])
+    private var selectedPhotos: Set<String> { get { _selectedPhotos.wrappedValue } nonmutating set { _selectedPhotos.wrappedValue = newValue } }
+    var _filter = State<PhotoFilter>(initialValue: .ungrouped)
+    private var filter: PhotoFilter { get { _filter.wrappedValue } nonmutating set { _filter.wrappedValue = newValue } }
+    var _search = State<String>(initialValue: "")
+    private var search: String { get { _search.wrappedValue } nonmutating set { _search.wrappedValue = newValue } }
+    var _showingNewGroup = State<Bool>(initialValue: false)
+    private var showingNewGroup: Bool { get { _showingNewGroup.wrappedValue } nonmutating set { _showingNewGroup.wrappedValue = newValue } }
+    var _newGroupName = State<String>(initialValue: "")
+    private var newGroupName: String { get { _newGroupName.wrappedValue } nonmutating set { _newGroupName.wrappedValue = newValue } }
+    var _suggestions = State<[GroupSuggestion]>(initialValue: [])
+    private var suggestions: [GroupSuggestion] { get { _suggestions.wrappedValue } nonmutating set { _suggestions.wrappedValue = newValue } }
 
     enum PhotoFilter: String, CaseIterable, Identifiable {
         case ungrouped = "Not in a group"
@@ -23,7 +30,7 @@ struct GroupsView: View {
     var body: some View {
         HStack(spacing: 0) {
             groupList
-                .frame(width: 290)
+                .frame(width: 250)
             Divider()
             VStack(alignment: .leading, spacing: 0) {
                 VStack(alignment: .leading, spacing: 14) {
@@ -41,8 +48,8 @@ struct GroupsView: View {
         }
         .onAppear { suggestions = state.groupSuggestions() }
         .onChange(of: state.groups) { _, _ in suggestions = state.groupSuggestions() }
-        .alert("New group", isPresented: $showingNewGroup) {
-            TextField("Name (e.g. “Grandma’s 80th birthday”)", text: $newGroupName)
+        .alert("New group", isPresented: _showingNewGroup.projectedValue) {
+            TextField("Name (e.g. “Grandma’s 80th birthday”)", text: _newGroupName.projectedValue)
             Button("Create") {
                 let g = state.createGroup(name: newGroupName.isEmpty ? "New group" : newGroupName, assetIDs: Array(orderedSelection))
                 selectedGroupID = g.id
@@ -62,7 +69,7 @@ struct GroupsView: View {
     // MARK: Left column
 
     private var groupList: some View {
-        List(selection: $selectedGroupID) {
+        List(selection: _selectedGroupID.projectedValue) {
             Section("Your groups") {
                 if state.groups.isEmpty {
                     Text("No groups yet. Select photos on the right and click “New Group”, or accept a suggestion below.")
@@ -132,15 +139,14 @@ struct GroupsView: View {
         let selectedGroup = state.groups.first { $0.id == selectedGroupID }
         return VStack(spacing: 0) {
             HStack(spacing: 10) {
-                Picker("Show", selection: $filter) {
+                Picker("Show", selection: _filter.projectedValue) {
                     ForEach(PhotoFilter.allCases) { Text($0.rawValue).tag($0) }
                 }
-                .pickerStyle(.segmented)
-                .frame(width: 360)
-                TextField("Search filenames or albums", text: $search)
+                .fixedSize()
+                TextField("Search filenames or albums", text: _search.projectedValue)
                     .textFieldStyle(.roundedBorder)
-                    .frame(maxWidth: 240)
-                Spacer()
+                    .frame(minWidth: 120, maxWidth: 240)
+                Spacer(minLength: 8)
                 Text("\(photos.count.formatted()) photos").foregroundStyle(.secondary)
                 Button("Select All") { selectedPhotos.formUnion(photos.map(\.id)) }
                 Button("Clear") { selectedPhotos.removeAll() }.disabled(selectedPhotos.isEmpty)
@@ -175,11 +181,11 @@ struct GroupsView: View {
                         Text("\(selectedPhotos.count) selected").fontWeight(.medium)
                         Spacer()
                         if let g = selectedGroup {
-                            Button("Remove from “\(g.name)”") {
+                            Button("Remove from Group") {
                                 state.remove(Array(selectedPhotos), from: g.id)
                                 selectedPhotos.removeAll()
                             }
-                            Button("Add to “\(g.name)”") {
+                            Button("Add to This Group") {
                                 state.add(orderedSelection, to: g.id)
                                 selectedPhotos.removeAll()
                             }
@@ -273,7 +279,6 @@ struct GroupEditor: View {
                     ForEach(GroupKind.allCases) { Text($0.displayName).tag($0) }
                 }
                 .pickerStyle(.radioGroup)
-                .horizontalRadioGroupLayout()
                 TextField("What do you know? e.g. “Lake Tahoe trip, late 70s” or “Mom’s high school years”",
                           text: group.hint, axis: .vertical)
                     .textFieldStyle(.roundedBorder)

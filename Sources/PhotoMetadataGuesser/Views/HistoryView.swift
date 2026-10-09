@@ -3,7 +3,8 @@ import DateGuessCore
 
 struct HistoryView: View {
     @Environment(AppState.self) private var state
-    @State private var batchToUndo: ApplyBatch?
+    var _batchToUndo = State<ApplyBatch?>(initialValue: nil)
+    private var batchToUndo: ApplyBatch? { get { _batchToUndo.wrappedValue } nonmutating set { _batchToUndo.wrappedValue = newValue } }
 
     var body: some View {
         ScrollView {

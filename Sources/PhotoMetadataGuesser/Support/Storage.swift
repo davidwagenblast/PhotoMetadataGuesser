@@ -9,8 +9,13 @@ final class JSONStore: @unchecked Sendable {
     private let queue = DispatchQueue(label: "PhotoMetadataGuesser.store", qos: .utility)
 
     init() {
-        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        directory = base.appendingPathComponent("PhotoMetadataGuesser", isDirectory: true)
+        if let custom = ProcessInfo.processInfo.environment["PDG_DATA_DIR"], !custom.isEmpty {
+            // Used by tests so they never touch real app data.
+            directory = URL(fileURLWithPath: custom, isDirectory: true)
+        } else {
+            let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+            directory = base.appendingPathComponent("PhotoMetadataGuesser", isDirectory: true)
+        }
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     }
 

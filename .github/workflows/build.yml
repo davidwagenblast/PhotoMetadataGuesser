@@ -46,3 +46,25 @@ jobs:
         run: PDG_BRANCH="${{ github.ref_name }}" PDG_NO_OPEN=1 bash install.sh
       - name: Check the installed app
         run: codesign --verify --verbose=1 "/Applications/Photo Date Guesser.app"
+
+  command-line-tools:
+    name: Build with only the Command Line Tools (newest macOS)
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Switch to the Command Line Tools
+        run: |
+          if [ ! -d /Library/Developer/CommandLineTools/usr/bin ]; then
+            echo "::error::Command Line Tools are not installed on this runner image"; exit 1
+          fi
+          sudo xcode-select --switch /Library/Developer/CommandLineTools
+          xcode-select -p
+          sw_vers
+          swift --version
+      - name: Build app bundle
+        # Setting DEVELOPER_DIR stops the build script from switching to Xcode.
+        env:
+          DEVELOPER_DIR: /Library/Developer/CommandLineTools
+        run: ./scripts/build-app.sh
+      - name: Check the app
+        run: codesign --verify --verbose=1 "build/Photo Date Guesser.app"

@@ -5,10 +5,14 @@ struct ScanView: View {
     @Environment(AppState.self) private var state
     var goNext: () -> Void
 
-    @State private var albumSearch = ""
-    @State private var newRuleLabel = "Scanning session"
-    @State private var newRuleStart = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
-    @State private var newRuleEnd = Date()
+    var _albumSearch = State<String>(initialValue: "")
+    private var albumSearch: String { get { _albumSearch.wrappedValue } nonmutating set { _albumSearch.wrappedValue = newValue } }
+    var _newRuleLabel = State<String>(initialValue: "Scanning session")
+    private var newRuleLabel: String { get { _newRuleLabel.wrappedValue } nonmutating set { _newRuleLabel.wrappedValue = newValue } }
+    var _newRuleStart = State<Date>(initialValue: Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date())
+    private var newRuleStart: Date { get { _newRuleStart.wrappedValue } nonmutating set { _newRuleStart.wrappedValue = newValue } }
+    var _newRuleEnd = State<Date>(initialValue: Date())
+    private var newRuleEnd: Date { get { _newRuleEnd.wrappedValue } nonmutating set { _newRuleEnd.wrappedValue = newValue } }
 
     var body: some View {
         @Bindable var state = state
@@ -148,7 +152,7 @@ struct ScanView: View {
             if state.albums.isEmpty {
                 Text("No albums found.").foregroundStyle(.secondary)
             } else {
-                TextField("Search albums", text: $albumSearch)
+                TextField("Search albums", text: _albumSearch.projectedValue)
                     .textFieldStyle(.roundedBorder)
                     .frame(maxWidth: 300)
                 let filtered = state.albums.filter { albumSearch.isEmpty || $0.title.localizedCaseInsensitiveContains(albumSearch) }
@@ -198,12 +202,14 @@ struct ScanView: View {
                     .buttonStyle(.borderless)
                 }
             }
+            TextField("Label", text: _newRuleLabel.projectedValue)
+                .textFieldStyle(.roundedBorder)
+                .frame(maxWidth: 260)
             HStack {
-                TextField("Label", text: $newRuleLabel)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 160)
-                DatePicker("From", selection: $newRuleStart, displayedComponents: .date)
-                DatePicker("To", selection: $newRuleEnd, displayedComponents: .date)
+                DatePicker("From", selection: _newRuleStart.projectedValue, displayedComponents: .date)
+                    .fixedSize()
+                DatePicker("To", selection: _newRuleEnd.projectedValue, displayedComponents: .date)
+                    .fixedSize()
                 Button("Add") {
                     let cal = Calendar.current
                     let start = cal.startOfDay(for: min(newRuleStart, newRuleEnd))

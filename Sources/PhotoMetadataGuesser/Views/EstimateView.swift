@@ -4,7 +4,8 @@ import DateGuessCore
 struct EstimateView: View {
     @Environment(AppState.self) private var state
     var goNext: () -> Void
-    @State private var confirmReanalyze = false
+    var _confirmReanalyze = State<Bool>(initialValue: false)
+    private var confirmReanalyze: Bool { get { _confirmReanalyze.wrappedValue } nonmutating set { _confirmReanalyze.wrappedValue = newValue } }
 
     var body: some View {
         let pending = state.pendingAnalysisIDs
@@ -89,7 +90,7 @@ struct EstimateView: View {
             .padding(28)
             .frame(maxWidth: 900, alignment: .leading)
         }
-        .confirmationDialog("Re-estimate all \(total.formatted()) photos?", isPresented: $confirmReanalyze) {
+        .confirmationDialog("Re-estimate all \(total.formatted()) photos?", isPresented: _confirmReanalyze.projectedValue) {
             Button("Re-estimate All") { state.startEstimation(ids: state.undatedSorted.map(\.id)) }
         } message: {
             Text(state.settings.ai.enabled

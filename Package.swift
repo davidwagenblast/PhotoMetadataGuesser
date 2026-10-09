@@ -17,5 +17,7 @@ let package = Package(
             dependencies: ["DateGuessCore"]
         ),
         .testTarget(name: "DateGuessCoreTests", dependencies: ["DateGuessCore"]),
+        // Layout checks for the app's SwiftUI screens.
+        .testTarget(name: "PhotoMetadataGuesserTests", dependencies: ["PhotoMetadataGuesser", "DateGuessCore"]),
     ]
 )

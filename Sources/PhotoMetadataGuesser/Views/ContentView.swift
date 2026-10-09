@@ -42,18 +42,25 @@ enum SidebarItem: String, CaseIterable, Identifiable {
 
 struct ContentView: View {
     @Environment(AppState.self) private var state
-    @State private var selection: SidebarItem? = .scan
+    var _selection = State<SidebarItem?>(initialValue: .scan)
+    private var selection: SidebarItem? { get { _selection.wrappedValue } nonmutating set { _selection.wrappedValue = newValue } }
+    var _columnVisibility = State<NavigationSplitViewVisibility>(initialValue: .all)
+    private var columnVisibility: NavigationSplitViewVisibility { get { _columnVisibility.wrappedValue } nonmutating set { _columnVisibility.wrappedValue = newValue } }
 
     var body: some View {
         Group {
             if state.isAuthorized {
-                NavigationSplitView {
+                NavigationSplitView(columnVisibility: _columnVisibility.projectedValue) {
                     sidebar
                 } detail: {
                     detail
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        // A fixed minimum keeps any screen's content from forcing the sidebar
+                        // to collapse (which left no way back to the other steps).
+                        .frame(minWidth: Self.detailMinWidth, maxWidth: .infinity, maxHeight: .infinity)
+                        .clipped()
                         .background(Theme.background)
                 }
+                .onChange(of: selection) { _, _ in columnVisibility = .all }
             } else {
                 WelcomeView()
             }
@@ -62,7 +69,7 @@ struct ContentView: View {
     }
 
     private var sidebar: some View {
-        List(selection: $selection) {
+        List(selection: _selection.projectedValue) {
             VStack(spacing: 6) {
                 Image(nsImage: NSApp.applicationIconImage)
                     .resizable()
@@ -110,8 +117,24 @@ struct ContentView: View {
         }
     }
 
+    static let detailMinWidth: CGFloat = 640
+
+    /// Steps that only make sense after a scan.
+    private func needsScan(_ item: SidebarItem) -> Bool {
+        state.scan.lastScan == nil && (item == .groups || item == .estimate || item == .review)
+    }
+
     @ViewBuilder private var detail: some View {
-        switch selection ?? .scan {
+        let item = selection ?? .scan
+        if needsScan(item) {
+            NeedsScanView(step: item, goToScan: { selection = .scan })
+        } else {
+            stepView(item)
+        }
+    }
+
+    @ViewBuilder private func stepView(_ item: SidebarItem) -> some View {
+        switch item {
         case .scan: ScanView(goNext: { selection = .groups })
         case .groups: GroupsView(goNext: { selection = .people })
         case .people: PeopleView(goNext: { selection = .estimate })
@@ -119,6 +142,37 @@ struct ContentView: View {
         case .review: ReviewView()
         case .history: HistoryView()
         }
+    }
+}
+
+/// Shown when a later step is opened before the library has been scanned.
+struct NeedsScanView: View {
+    var step: SidebarItem
+    var goToScan: () -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: step.icon)
+                .font(.system(size: 44, weight: .semibold))
+                .foregroundStyle(Theme.accent)
+            Text("Let’s find your undated photos first")
+                .font(.title.weight(.semibold))
+            Text("“\(step.title)” works with the photos the scan finds. Start with step 1 — you can come back here any time.")
+                .font(.title3)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 480)
+            Button {
+                goToScan()
+            } label: {
+                Label("Go to Step 1: Find Undated Photos", systemImage: "magnifyingglass")
+                    .padding(.horizontal, 8)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+        }
+        .padding(40)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

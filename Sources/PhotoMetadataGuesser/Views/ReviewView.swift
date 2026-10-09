@@ -4,12 +4,18 @@ import DateGuessCore
 struct ReviewView: View {
     @Environment(AppState.self) private var state
 
-    @State private var filter: Filter = .toReview
-    @State private var sort: Sort = .library
-    @State private var groupFilter: UUID?
-    @State private var search = ""
-    @State private var detailID: String?
-    @State private var confirmApply = false
+    var _filter = State<Filter>(initialValue: .toReview)
+    private var filter: Filter { get { _filter.wrappedValue } nonmutating set { _filter.wrappedValue = newValue } }
+    var _sort = State<Sort>(initialValue: .library)
+    private var sort: Sort { get { _sort.wrappedValue } nonmutating set { _sort.wrappedValue = newValue } }
+    var _groupFilter = State<UUID?>(initialValue: nil)
+    private var groupFilter: UUID? { get { _groupFilter.wrappedValue } nonmutating set { _groupFilter.wrappedValue = newValue } }
+    var _search = State<String>(initialValue: "")
+    private var search: String { get { _search.wrappedValue } nonmutating set { _search.wrappedValue = newValue } }
+    var _detailID = State<String?>(initialValue: nil)
+    private var detailID: String? { get { _detailID.wrappedValue } nonmutating set { _detailID.wrappedValue = newValue } }
+    var _confirmApply = State<Bool>(initialValue: false)
+    private var confirmApply: Bool { get { _confirmApply.wrappedValue } nonmutating set { _confirmApply.wrappedValue = newValue } }
 
     enum Filter: String, CaseIterable, Identifiable {
         case toReview = "To review"
@@ -98,7 +104,7 @@ struct ReviewView: View {
         .sheet(item: Binding(get: { detailID.map(IdentifiedString.init) }, set: { detailID = $0?.id })) { item in
             PhotoDetailSheet(assetID: item.id)
         }
-        .alert("Apply \(selectedCount.formatted()) new dates?", isPresented: $confirmApply) {
+        .alert("Apply \(selectedCount.formatted()) new dates?", isPresented: _confirmApply.projectedValue) {
             Button("Apply Dates") { state.applySelected() }
             Button("Cancel", role: .cancel) {}
         } message: {
@@ -106,38 +112,64 @@ struct ReviewView: View {
         }
     }
 
+    /// Filters on one row when there's room, two rows when the window is narrow.
     private func toolbar(_ ids: [String]) -> some View {
-        HStack(spacing: 10) {
-            Picker("Show", selection: $filter) {
-                ForEach(Filter.allCases) { Text($0.rawValue).tag($0) }
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 10) {
+                filterControls
+                searchField
+                Spacer(minLength: 8)
+                checkMenu(ids)
             }
-            .frame(width: 210)
-            Picker("Group", selection: $groupFilter) {
-                Text("All photos").tag(UUID?.none)
-                ForEach(state.groups) { g in Text(g.name).tag(UUID?.some(g.id)) }
-            }
-            .frame(width: 200)
-            Picker("Sort", selection: $sort) {
-                ForEach(Sort.allCases) { Text($0.rawValue).tag($0) }
-            }
-            .frame(width: 220)
-            TextField("Search", text: $search)
-                .textFieldStyle(.roundedBorder)
-                .frame(maxWidth: 180)
-            Spacer()
-            Menu("Check…") {
-                Button("Check all \(ids.count.formatted()) shown") { state.select(ids, true) }
-                Button("Check shown with high confidence") {
-                    state.select(ids.filter { state.effectiveEstimate($0)?.confidenceLevel == .high }, true)
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 10) {
+                    filterControls
+                    Spacer(minLength: 0)
                 }
-                Button("Check shown with medium or high confidence") {
-                    state.select(ids.filter { state.effectiveEstimate($0)?.confidenceLevel != .low }, true)
+                HStack(spacing: 10) {
+                    searchField
+                    Spacer(minLength: 8)
+                    checkMenu(ids)
                 }
-                Divider()
-                Button("Uncheck all shown") { state.select(ids, false) }
             }
-            .fixedSize()
         }
+    }
+
+    @ViewBuilder private var filterControls: some View {
+        Picker("Show", selection: _filter.projectedValue) {
+            ForEach(Filter.allCases) { Text($0.rawValue).tag($0) }
+        }
+        .fixedSize()
+        Picker("Group", selection: _groupFilter.projectedValue) {
+            Text("All photos").tag(UUID?.none)
+            ForEach(state.groups) { g in Text(g.name).tag(UUID?.some(g.id)) }
+        }
+        .frame(maxWidth: 200)
+        Picker("Sort", selection: _sort.projectedValue) {
+            ForEach(Sort.allCases) { Text($0.rawValue).tag($0) }
+        }
+        .fixedSize()
+    }
+
+    private var searchField: some View {
+        TextField("Search", text: _search.projectedValue)
+            .textFieldStyle(.roundedBorder)
+            .frame(minWidth: 120, maxWidth: 200)
+    }
+
+    private func checkMenu(_ ids: [String]) -> some View {
+        Menu("Check…") {
+            Button("Check all \(ids.count.formatted()) shown") { state.select(ids, true) }
+            Button("Check shown with high confidence") {
+                state.select(ids.filter { state.effectiveEstimate($0)?.confidenceLevel == .high }, true)
+            }
+            Button("Check shown with medium or high confidence") {
+                state.select(ids.filter { state.effectiveEstimate($0)?.confidenceLevel != .low }, true)
+            }
+            Divider()
+            Button("Uncheck all shown") { state.select(ids, false) }
+        }
+        .fixedSize()
     }
 
     @ViewBuilder
@@ -145,7 +177,7 @@ struct ReviewView: View {
         HStack(spacing: 14) {
             if let p = state.applyProgress {
                 ProgressView(value: Double(p.done), total: Double(max(1, p.total)))
-                    .frame(width: 220)
+                    .frame(maxWidth: 220)
                 Text("Updating \(p.done.formatted()) of \(p.total.formatted())…")
             } else {
                 Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.accent)
@@ -178,7 +210,8 @@ struct ReviewCard: View {
     @Environment(AppState.self) private var state
     var assetID: String
     var onOpen: () -> Void
-    @State private var showWhy = false
+    var _showWhy = State<Bool>(initialValue: false)
+    private var showWhy: Bool { get { _showWhy.wrappedValue } nonmutating set { _showWhy.wrappedValue = newValue } }
 
     var body: some View {
         if let computed = state.estimates[assetID], let estimate = state.effectiveEstimate(assetID), let photo = state.photo(assetID) {
@@ -254,7 +287,7 @@ struct ReviewCard: View {
                     .fixedSize()
                     Spacer()
                     Button("Why?") { showWhy = true }
-                        .popover(isPresented: $showWhy, arrowEdge: .bottom) {
+                        .popover(isPresented: _showWhy.projectedValue, arrowEdge: .bottom) {
                             ScrollView {
                                 VStack(alignment: .leading, spacing: 10) {
                                     Text("Why \(estimate.displayString)?").font(.headline)

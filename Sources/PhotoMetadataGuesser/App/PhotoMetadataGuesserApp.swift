@@ -3,7 +3,8 @@ import SwiftUI
 
 @main
 struct PhotoMetadataGuesserApp: App {
-    @State private var state = AppState()
+    var _state = State<AppState>(initialValue: AppState())
+    private var state: AppState { get { _state.wrappedValue } nonmutating set { _state.wrappedValue = newValue } }
 
     var body: some Scene {
         WindowGroup("Photo Date Guesser") {
@@ -16,6 +17,7 @@ struct PhotoMetadataGuesserApp: App {
                 }
         }
         .windowToolbarStyle(.unified)
+        .commands { SidebarCommands() }
 
         Settings {
             SettingsView()

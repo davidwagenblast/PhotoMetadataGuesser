@@ -7,6 +7,18 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# Prefer full Xcode when it's installed (and its license is accepted), even if the active
+# developer directory is the Command Line Tools. The build also works with only the CLT.
+if [ -z "${DEVELOPER_DIR:-}" ] && xcode-select -p 2>/dev/null | grep -q CommandLineTools; then
+  XCODE_APP="$(mdfind "kMDItemCFBundleIdentifier == 'com.apple.dt.Xcode'" 2>/dev/null | head -n 1)"
+  [ -n "$XCODE_APP" ] || XCODE_APP="/Applications/Xcode.app"
+  if [ -d "$XCODE_APP/Contents/Developer" ] && \
+     DEVELOPER_DIR="$XCODE_APP/Contents/Developer" xcrun swift --version >/dev/null 2>&1; then
+    export DEVELOPER_DIR="$XCODE_APP/Contents/Developer"
+    echo "▸ Using Xcode at $XCODE_APP"
+  fi
+fi
+
 CONFIG="${CONFIG:-release}"
 APP_NAME="Photo Date Guesser"
 APP="build/${APP_NAME}.app"

@@ -3,6 +3,10 @@ import Photos
 import SwiftUI
 import DateGuessCore
 
+// Views keep their local state in plain `State<T>` properties (`var _x = State(...)` plus an
+// `x` accessor) instead of `@State`. Newer SDKs implement `@State` as a macro whose plugin ships
+// only with full Xcode, so `@State` breaks builds that use just the Command Line Tools.
+
 enum Theme {
     static let accent = Color(red: 0.93, green: 0.42, blue: 0.40)
     static let peach = Color(red: 1.0, green: 0.86, blue: 0.76)
@@ -127,7 +131,8 @@ struct AssetThumbnail: View {
     var side: CGFloat
     var height: CGFloat?
     var cornerRadius: CGFloat = 10
-    @State private var loader = ThumbnailLoader()
+    var _loader = State<ThumbnailLoader>(initialValue: ThumbnailLoader())
+    private var loader: ThumbnailLoader { get { _loader.wrappedValue } nonmutating set { _loader.wrappedValue = newValue } }
 
     var body: some View {
         ZStack {
@@ -153,7 +158,8 @@ struct AssetThumbnail: View {
 struct AssetPreview: View {
     var assetID: String
     var maxSide: CGFloat
-    @State private var loader = ThumbnailLoader()
+    var _loader = State<ThumbnailLoader>(initialValue: ThumbnailLoader())
+    private var loader: ThumbnailLoader { get { _loader.wrappedValue } nonmutating set { _loader.wrappedValue = newValue } }
 
     var body: some View {
         Group {

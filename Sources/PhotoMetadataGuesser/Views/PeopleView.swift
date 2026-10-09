@@ -5,11 +5,12 @@ import DateGuessCore
 struct PeopleView: View {
     @Environment(AppState.self) private var state
     var goNext: () -> Void
-    @State private var selectedID: UUID?
+    var _selectedID = State<UUID?>(initialValue: nil)
+    private var selectedID: UUID? { get { _selectedID.wrappedValue } nonmutating set { _selectedID.wrappedValue = newValue } }
 
     var body: some View {
         HStack(spacing: 0) {
-            List(selection: $selectedID) {
+            List(selection: _selectedID.projectedValue) {
                 Section("People") {
                     if state.people.isEmpty {
                         Text("Nobody yet — add the people who show up most in your old photos.")
@@ -77,7 +78,8 @@ struct PersonEditor: View {
     @Environment(AppState.self) private var state
     var personID: UUID
     var onDelete: () -> Void
-    @State private var pickerItems: [PhotosPickerItem] = []
+    var _pickerItems = State<[PhotosPickerItem]>(initialValue: [])
+    private var pickerItems: [PhotosPickerItem] { get { _pickerItems.wrappedValue } nonmutating set { _pickerItems.wrappedValue = newValue } }
 
     private var personBinding: Binding<PersonInfo>? {
         guard let current = state.people.first(where: { $0.id == personID }) else { return nil }
@@ -142,7 +144,7 @@ struct PersonEditor: View {
                                 .padding(4)
                             }
                     }
-                    PhotosPicker(selection: $pickerItems, maxSelectionCount: 2, matching: .images, photoLibrary: .shared()) {
+                    PhotosPicker(selection: _pickerItems.projectedValue, maxSelectionCount: 2, matching: .images, photoLibrary: .shared()) {
                         VStack(spacing: 6) {
                             Image(systemName: "plus")
                                 .font(.title)

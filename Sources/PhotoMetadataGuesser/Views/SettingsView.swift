@@ -4,8 +4,10 @@ import DateGuessCore
 
 struct SettingsView: View {
     @Environment(AppState.self) private var state
-    @State private var keyDraft = ""
-    @State private var confirmReset = false
+    var _keyDraft = State<String>(initialValue: "")
+    private var keyDraft: String { get { _keyDraft.wrappedValue } nonmutating set { _keyDraft.wrappedValue = newValue } }
+    var _confirmReset = State<Bool>(initialValue: false)
+    private var confirmReset: Bool { get { _confirmReset.wrappedValue } nonmutating set { _confirmReset.wrappedValue = newValue } }
 
     var body: some View {
         @Bindable var state = state
@@ -13,7 +15,7 @@ struct SettingsView: View {
             Section("Claude visual analysis") {
                 Toggle("Use Claude to analyze photos", isOn: $state.settings.ai.enabled)
                 HStack {
-                    SecureField("Anthropic API key", text: $keyDraft, prompt: Text(state.hasAPIKey ? "Saved in your Keychain" : "sk-ant-…"))
+                    SecureField("Anthropic API key", text: _keyDraft.projectedValue, prompt: Text(state.hasAPIKey ? "Saved in your Keychain" : "sk-ant-…"))
                     Button("Save") {
                         state.saveAPIKey(keyDraft)
                         keyDraft = ""
@@ -69,7 +71,7 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(width: 560)
         .padding(.vertical, 8)
-        .alert("Clear all estimates?", isPresented: $confirmReset) {
+        .alert("Clear all estimates?", isPresented: _confirmReset.projectedValue) {
             Button("Clear", role: .destructive) {
                 state.analyses = [:]
                 state.saveAnalysesNow()
