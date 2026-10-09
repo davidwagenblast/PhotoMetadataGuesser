@@ -35,7 +35,8 @@ main() {
 
   local tmp
   tmp="$(mktemp -d)"
-  trap 'rm -rf "$tmp"' EXIT
+  # Expand the path now: the trap runs after main() returns, when locals are gone.
+  trap "rm -rf '$tmp'" EXIT
 
   say "▸ Downloading the source (${branch})…"
   curl -fsSL --retry 3 -o "$tmp/source.tar.gz" "https://github.com/${repo}/archive/refs/heads/${branch}.tar.gz" \
