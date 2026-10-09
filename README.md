@@ -75,16 +75,17 @@ Each card shows the thumbnail, the guess (“Summer 1976”), a confidence badge
 
 Requirements: macOS 14 Sonoma or later. You also need Apple’s free developer tools; the build script offers to install them if they’re missing.
 
-### One step
+### One line
 
-1. Download the project: **Code ▸ Download ZIP** on GitHub, then double-click the ZIP. Or clone it with `git clone https://github.com/davidwagenblast/PhotoMetadataGuesser.git`.
-2. Double-click **`Build Photo Date Guesser.command`**.
+Paste this into Terminal:
 
-That’s it. It builds the app, puts it in your Applications folder and opens it.
+```bash
+curl -fsSL https://raw.githubusercontent.com/davidwagenblast/PhotoMetadataGuesser/main/install.sh | bash
+```
 
-If macOS says the file can’t be opened because it’s from the internet, right-click it and choose **Open**. If it says the file isn’t executable, open Terminal in the folder and run `bash "Build Photo Date Guesser.command"`.
+It downloads the latest source, builds the app, puts it in your Applications folder and opens it. Run the same command again to update.
 
-From Terminal you can also run `./"Build Photo Date Guesser.command" --no-install --no-open` to just build into `./build`.
+If you already have the project folder, you can instead double-click **`Build Photo Date Guesser.command`**. It does the same thing from the files on your Mac.
 
 ### Other ways
 
